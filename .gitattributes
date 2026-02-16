@@ -1,0 +1,2 @@
+# Treat .pem files as binary to prevent line ending conversions
+*.pem binary

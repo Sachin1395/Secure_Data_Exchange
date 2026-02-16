@@ -1,4 +1,5 @@
 import os
+import json
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
@@ -32,14 +33,38 @@ class Encryption():
     def generate_aes_key(self):
         return os.urandom(32)  # Generate a 256-bit key for AES-256
 
-    def encrypt_data(self,data, aes_key):
-        iv = os.urandom(16)  # Initialization vector for AES
-        cipher = Cipher(algorithms.AES(aes_key), modes.CFB(iv))
+    def encrypt_data(self, data, aes_key):
+        """
+        Encrypt data using AES-256-GCM
+        Format: nonce (12 bytes) + ciphertext + tag (16 bytes)
+        """
+        nonce = os.urandom(12)  # 12-byte nonce for GCM
+        cipher = Cipher(algorithms.AES(aes_key), modes.GCM(nonce))
         encryptor = cipher.encryptor()
-        encrypted_data = encryptor.update(data.encode()) + encryptor.finalize()
-        return iv + encrypted_data  # Prepend IV for use in decryption
+        
+        # Convert data to JSON string if it's a dict
+        if isinstance(data, dict):
+            plaintext = json.dumps(data).encode()
+        else:
+            plaintext = data.encode() if isinstance(data, str) else data
+        
+        ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+        tag = encryptor.tag
+        
+        # Return: nonce + ciphertext + tag
+        return nonce + ciphertext + tag
 
-    def encrypt_aes_key(self,aes_key):
+    def encrypt_payload(self, payload_dict, aes_key):
+        """
+        Encrypt entire payload dictionary as JSON string
+        """
+        json_str = json.dumps(payload_dict)
+        return self.encrypt_data(json_str, aes_key)
+
+    def encrypt_aes_key(self, aes_key):
+        """
+        Encrypt AES key using RSA-2048 with OAEP padding
+        """
         encrypted_key = self.public_key.encrypt(
             aes_key,
             padding.OAEP(
