@@ -24,16 +24,27 @@ received_data = responce.json()
 try:
     encrypted_payload = base64.b64decode(received_data["payload"].encode('utf-8'))
     encrypted_aes_key = base64.b64decode(received_data["aes"].encode('utf-8'))
+    signature = base64.b64decode(received_data["signature"].encode('utf-8'))
 except Exception as e:
     print(f"Error decoding Base64: {e}")
     exit()
 
-# Initialize Decryption and decrypt AES key
+# Initialize Decryption
 dec = Decryption()
+
+# 🔐 VERIFY SIGNATURE FIRST
+try:
+    dec.verify_signature(encrypted_payload, signature)
+    print("✓ Signature verification successful!\n")
+except Exception:
+    print(" Signature verification failed! Data may be tampered.")
+    exit()
+
+# Now decrypt AES key
 dec_key = dec.decrypt_aes_key(encrypted_aes_key)
 
-print("\n✓ Successfully received encrypted data!")
 print("✓ AES key decrypted using RSA-2048\n")
+
 
 # Decrypt the entire payload
 try:

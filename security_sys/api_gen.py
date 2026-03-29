@@ -33,13 +33,16 @@ def main():
         encrypted_payload = en.encrypt_payload(data, aes)
         encrypted_aes_key = en.encrypt_aes_key(aes)
 
+        signature = en.sign_payload(encrypted_payload)
+
         # Generate random access token
         access_token = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
 
         # New structure: {"payload": encrypted_bytes, "aes": encrypted_aes_key}
         transmission_data = {
-            "payload": base64.b64encode(encrypted_payload).decode('utf-8'),
-            "aes": base64.b64encode(encrypted_aes_key).decode('utf-8')
+            "payload": base64.b64encode(encrypted_payload).decode(),
+            "aes": base64.b64encode(encrypted_aes_key).decode(),
+            "signature": base64.b64encode(signature).decode()
         }
 
         # Upload to server

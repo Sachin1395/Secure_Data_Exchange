@@ -2,6 +2,7 @@ import json
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
 class Decryption():
@@ -51,4 +52,18 @@ class Decryption():
         """
         json_str = self.decrypt_data(encrypted_payload, aes_key)
         return json.loads(json_str)
+
+    def verify_signature(self, encrypted_payload, signature):
+        public_key = self.private_key.public_key()
+
+        public_key.verify(
+            signature,
+            encrypted_payload,
+            asym_padding.PSS(
+                mgf=asym_padding.MGF1(hashes.SHA256()),
+                salt_length=asym_padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
 
